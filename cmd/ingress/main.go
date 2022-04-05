@@ -21,6 +21,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"time"
 
 	cloudevents "github.com/cloudevents/sdk-go/v2"
 	"github.com/cloudevents/sdk-go/v2/binding"
@@ -49,7 +50,9 @@ type envConfig struct {
 	BrokerURL    string `envconfig:"BROKER_URL" required:"true"`
 	ExchangeName string `envconfig:"EXCHANGE_NAME" required:"true"`
 
-	channel *amqp.Channel
+	channel     *amqp.Channel
+	shouldRetry bool
+	conn        *amqp.Connection
 }
 
 func main() {
@@ -70,23 +73,15 @@ func main() {
 		logger.Errorw("Failed to create the metrics exporter", zap.Error(err))
 	}
 
-	conn, err := amqp.Dial(env.BrokerURL)
-	if err != nil {
-		logger.Fatalw("failed to connect to RabbitMQ", zap.Error(err))
-	}
-	defer conn.Close()
+	defer func() {
+		env.shouldRetry = false
+		env.conn.Close()
+		env.channel.Close()
+	}()
 
-	env.channel, err = conn.Channel()
-	if err != nil {
-		logger.Fatalw("failed to open a channel", zap.Error(err))
-	}
-
-	// noWait is false
-	if err := env.channel.Confirm(false); err != nil {
-		logger.Fatalf("faild to switch connection channel to confirm mode: %s", err)
-	}
-	defer env.channel.Close()
-
+	// TODO: set ReadTimeout: covers entire read of request as well as IdleTimeout when keepalive is set by client
+	// TODO: setting WriteTimeout will make sure the server responds back in that timeout after reading request fully.
+	// This will prevent RabbitMQ from holding the connection on for too long
 	connectionArgs := kncloudevents.ConnectionArgs{
 		MaxIdleConns:        defaultMaxIdleConnections,
 		MaxIdleConnsPerHost: defaultMaxIdleConnectionsPerHost,
@@ -97,6 +92,51 @@ func main() {
 
 	if err := receiver.StartListen(ctx, &env); err != nil {
 		logger.Fatalf("failed to start listen, %v", err)
+	}
+}
+
+func (env *envConfig) SetupConnection() {
+	// stop retrying while we gracefully shutdown connection and channel if defined
+	//env.shouldRetry = false
+	// connection AND/OR channel may still be active at this point. need to close to prevent leak
+	if env.conn != nil && !env.conn.IsClosed() {
+		env.conn.Close()
+	}
+	if env.channel != nil && !env.channel.IsClosed() {
+		env.channel.Close()
+	}
+
+	var err error
+	logger := env.GetLogger()
+	env.conn, err = amqp.Dial(env.BrokerURL)
+	if err != nil {
+		logger.Fatalw("failed to connect to RabbitMQ", zap.Error(err))
+	}
+
+	env.channel, err = env.conn.Channel()
+	if err != nil {
+		logger.Fatalw("failed to open a channel", zap.Error(err))
+	}
+
+	// noWait is false
+	if err := env.channel.Confirm(false); err != nil {
+		logger.Fatalf("faild to switch connection channel to confirm mode: %s", err)
+	}
+
+	// reset so to continue retrying
+	//env.shouldRetry = true
+	go env.RetryOnFailure()
+}
+
+func (env *envConfig) RetryOnFailure() {
+	select {
+	case _ = <-env.conn.NotifyClose(make(chan *amqp.Error)):
+	case _ = <-env.channel.NotifyClose(make(chan *amqp.Error)):
+	}
+	if env.shouldRetry {
+		// Wait before retrying
+		time.Sleep(2*time.Second)
+		env.SetupConnection()
 	}
 }
 
