@@ -91,10 +91,10 @@ func (mr *MagicEnvironment) Finish() {
 	// Delete the namespace after sending the Finished milestone event
 	// since emitters might use the namespace.
 	mr.milestones.Finished()
-	if err := mr.DeleteNamespaceIfNeeded(); err != nil {
-		mr.milestones.Exception(NamespaceDeleteErrorReason, "failed to delete namespace %q, %v", mr.namespace, err)
-		panic(err)
-	}
+	//if err := mr.DeleteNamespaceIfNeeded(); err != nil {
+	//	mr.milestones.Exception(NamespaceDeleteErrorReason, "failed to delete namespace %q, %v", mr.namespace, err)
+	//	panic(err)
+	//}
 }
 
 // WithPollTimings is an environment option to override default poll timings.
@@ -245,6 +245,7 @@ func (mr *MagicEnvironment) Test(ctx context.Context, originalT *testing.T, f *f
 
 	skipAssertions := false
 	skipRequirements := false
+	skipTeardown := false
 	skipReason := ""
 
 	mr.milestones.StepsPlanned(f.Name, steps, originalT)
@@ -259,6 +260,7 @@ func (mr *MagicEnvironment) Test(ctx context.Context, originalT *testing.T, f *f
 		if internalT.Failed() {
 			skipAssertions = true
 			skipRequirements = true // No need to test other requirements
+			skipTeardown = true
 			break                   // No need to continue the setup
 		}
 	}
@@ -275,6 +277,7 @@ func (mr *MagicEnvironment) Test(ctx context.Context, originalT *testing.T, f *f
 		if internalT.Failed() {
 			skipAssertions = true
 			skipRequirements = true // No need to test other requirements
+			skipTeardown = true
 		}
 	}
 
@@ -285,10 +288,16 @@ func (mr *MagicEnvironment) Test(ctx context.Context, originalT *testing.T, f *f
 			break
 		}
 
+		var internalT feature.T
+
 		if mr.shouldFail(&s) {
-			mr.executeWithoutWrappingT(ctx, originalT, f, &s)
+			internalT = mr.executeWithoutWrappingT(ctx, originalT, f, &s)
 		} else {
-			mr.executeWithSkippingT(ctx, originalT, f, &s)
+			internalT = mr.executeWithSkippingT(ctx, originalT, f, &s)
+		}
+
+		if internalT.Failed() {
+			skipTeardown = true
 		}
 
 		// TODO implement fail fast feature to avoid proceeding with testing if an "expected level" assert fails here
@@ -300,6 +309,9 @@ func (mr *MagicEnvironment) Test(ctx context.Context, originalT *testing.T, f *f
 	}
 
 	for _, s := range steps[feature.Teardown] {
+		if skipTeardown {
+			break
+		}
 		s := s
 
 		// Teardown are executed always, no matter their level and state

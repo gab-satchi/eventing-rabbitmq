@@ -1,3 +1,9 @@
+# Temporary Branch to Reproduce Flakes
+- Run ./run-conformance.sh
+- This will run the flaky test in a loop until failure
+- When a failure happens, it will preserve the namespace of the test and the test output will be in `./test.out`
+
+
 # RabbitMQ Eventing components
 
 **[These components are BETA](https://github.com/knative/community/tree/main/mechanics/MATURITY-LEVELS.md)**

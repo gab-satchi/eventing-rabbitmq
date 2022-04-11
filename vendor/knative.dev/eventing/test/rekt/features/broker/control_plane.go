@@ -50,18 +50,11 @@ import (
 func ControlPlaneConformance(brokerName string) *feature.FeatureSet {
 	fs := &feature.FeatureSet{
 		Name: "Knative Broker Specification - Control Plane",
-		Features: []*feature.Feature{
-			ControlPlaneBroker(brokerName),
-			ControlPlaneTrigger_GivenBroker(brokerName),
-			ControlPlaneTrigger_GivenBrokerTriggerReady(brokerName),
-			ControlPlaneTrigger_WithBrokerLifecycle(),
-			ControlPlaneTrigger_WithValidFilters(brokerName),
-			ControlPlaneTrigger_WithInvalidFilters(brokerName),
-		},
+		Features: []*feature.Feature{},
 	}
 
 	// Add each feature of event routing and Delivery tests as a new feature
-	addControlPlaneEventRouting(fs)
+	//addControlPlaneEventRouting(fs)
 	addControlPlaneDelivery(fs)
 	// TODO: This is not a control plane test, or at best it is a blend with data plane.
 	// Must("Events that pass the attributes filter MUST include context or extension attributes that match all key-value pairs exactly.", todo)
@@ -301,42 +294,6 @@ func addControlPlaneDelivery(fs *feature.FeatureSet) {
 		// How many events to fail before succeeding
 		t2FailCount uint
 	}{{
-		name: "When `BrokerSpec.Delivery` and `TriggerSpec.Delivery` are both not configured, no delivery spec SHOULD be used.",
-	}, {
-		name: "When `BrokerSpec.Delivery` is configured, but not the specific `TriggerSpec.Delivery`, then the `BrokerSpec.Delivery` SHOULD be used. (Retry)",
-		brokerDS: &v1.DeliverySpec{
-			DeadLetterSink: new(duckv1.Destination),
-			Retry:          ptr.Int32(3),
-		},
-		t1FailCount: 3, // Should get event.
-		t2FailCount: 4, // Should end up in DLQ.
-	}, {
-		name: "When `TriggerSpec.Delivery` is configured, then `TriggerSpec.Delivery` SHOULD be used. (Retry)",
-		brokerDS: &v1.DeliverySpec{ // Disable delivery spec defaulting
-			Retry: ptr.Int32(0),
-		},
-		t1DS: &v1.DeliverySpec{
-			DeadLetterSink: new(duckv1.Destination),
-			Retry:          ptr.Int32(3),
-		},
-		t2DS: &v1.DeliverySpec{
-			Retry: ptr.Int32(1),
-		},
-		t1FailCount: 3, // Should get event.
-		t2FailCount: 2, // Should be dropped.
-	}, {
-		name: "When both `BrokerSpec.Delivery` and `TriggerSpec.Delivery` is configured, then `TriggerSpec.Delivery` SHOULD be used. (Retry)",
-		brokerDS: &v1.DeliverySpec{
-			DeadLetterSink: new(duckv1.Destination),
-			Retry:          ptr.Int32(1),
-		},
-		t1DS: &v1.DeliverySpec{
-			DeadLetterSink: new(duckv1.Destination),
-			Retry:          ptr.Int32(3),
-		},
-		t1FailCount: 3, // Should get event.
-		t2FailCount: 2, // Should end up in DLQ.
-	}, {
 		name: "When both `BrokerSpec.Delivery` and `TriggerSpec.Delivery` is configured, then `TriggerSpec.Delivery` SHOULD be used. (Retry+DLQ)",
 		brokerDS: &v1.DeliverySpec{
 			DeadLetterSink: new(duckv1.Destination),
