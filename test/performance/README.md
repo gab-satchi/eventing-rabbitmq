@@ -2,24 +2,24 @@
 
 ## Pre-requisites
 
-- GKE 1.21 with autoscaling
-- kubectl 1.21
+- GKE cluster running v1.22
+- kubectl 1.22
 - [ko v0.11.2](https://github.com/google/ko/releases/tag/v0.11.2) + [`KO_DOCKER_REPO`](https://github.com/knative/eventing/blob/main/DEVELOPMENT.md#setup-your-environment)
 - A git clone of [knative-sandbox/eventing-rabbitmq](https://github.com/knative-sandbox/eventing-rabbitmq)
 
 
 ## Install Knative Serving
 
-We install a specific version of Knative - [v1.5.0](https://github.com/knative/eventing/releases/tag/knative-v1.5.0) - as this is a point-in-time guide.
+We install a specific version of Knative - [v1.6.0](https://github.com/knative/eventing/releases/tag/knative-v1.6.0) - as this is a point-in-time guide.
 While we expect subsequent versions to continue working the same way, in the absence of automated tests that ensure this, we stick to exact versions that we have tested manually.
 
 ```sh
 # Installing Knative Serving ... https://github.com/knative/serving/releases
-kubectl apply --filename https://github.com/knative/serving/releases/download/knative-v1.5.0/serving-crds.yaml
-kubectl apply --filename https://github.com/knative/serving/releases/download/knative-v1.5.0/serving-core.yaml
+kubectl apply --filename https://github.com/knative/serving/releases/download/knative-v1.6.0/serving-crds.yaml
+kubectl apply --filename https://github.com/knative/serving/releases/download/knative-v1.6.0/serving-core.yaml
 
 # Installing Knative Serving Kourier networking layer ... https://github.com/knative/net-kourier/releases
-kubectl apply --filename https://github.com/knative/net-kourier/releases/download/knative-v1.5.0/kourier.yaml
+kubectl apply --filename https://github.com/knative/net-kourier/releases/download/knative-v1.6.0/kourier.yaml
 
 # Patching Knative Serving to use Kourier for the networking layer ...
 kubectl patch configmap/config-network \
@@ -33,8 +33,8 @@ kubectl patch configmap/config-network \
 
 ```sh
 # Installing Knative Eventing ... https://github.com/knative/eventing/releases
-kubectl apply --filename https://github.com/knative/eventing/releases/download/knative-v1.5.0/eventing-crds.yaml
-kubectl apply --filename https://github.com/knative/eventing/releases/download/knative-v1.5.0/eventing-core.yaml
+kubectl apply --filename https://github.com/knative/eventing/releases/download/knative-v1.6.0/eventing-crds.yaml
+kubectl apply --filename https://github.com/knative/eventing/releases/download/knative-v1.6.0/eventing-core.yaml
 
 # Installing RabbitMQ Operator ... https://github.com/rabbitmq/cluster-operator/releases
 kubectl apply --filename https://github.com/rabbitmq/cluster-operator/releases/download/v1.13.0/cluster-operator.yml
@@ -49,10 +49,10 @@ kubectl apply --filename https://github.com/rabbitmq/messaging-topology-operator
 
 
 # Installing Knative Eventing RabbitMQ Broker ... https://github.com/knative-sandbox/eventing-rabbitmq/releases
-kubectl apply --filename https://github.com/knative-sandbox/eventing-rabbitmq/releases/download/knative-v1.5.0/rabbitmq-broker.yaml
+kubectl apply --filename https://github.com/knative-sandbox/eventing-rabbitmq/releases/download/knative-v1.6.0/rabbitmq-broker.yaml
 
 # Installing Knative Eventing RabbitMQ Source ... https://github.com/knative-sandbox/eventing-rabbitmq/releases
-kubectl apply --filename https://github.com/knative-sandbox/eventing-rabbitmq/releases/download/knative-v1.5.0/rabbitmq-source.yaml
+kubectl apply --filename https://github.com/knative-sandbox/eventing-rabbitmq/releases/download/knative-v1.6.0/rabbitmq-source.yaml
 ```
 
 ## Broker Benchmarks

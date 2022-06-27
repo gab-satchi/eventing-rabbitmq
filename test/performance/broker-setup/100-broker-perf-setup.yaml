@@ -170,6 +170,19 @@ spec:
 
 ---
 
+apiVersion: eventing.knative.dev/v1alpha1
+kind: RabbitmqBrokerConfig
+metadata:
+  name: rabbitmq-broker-config
+  namespace: perf-eventing
+spec:
+  rabbitmqClusterReference:
+    name: rabbitmq-test-cluster
+    namespace: perf-eventing
+  queueType: "quorum"
+
+---
+
 apiVersion: eventing.knative.dev/v1
 kind: Broker
 metadata:
@@ -179,9 +192,9 @@ metadata:
     eventing.knative.dev/broker.class: RabbitMQBroker
 spec:
   config:
-    apiVersion: rabbitmq.com/v1beta1
-    kind: RabbitmqCluster
-    name: rabbitmq-test-cluster
+    apiVersion: eventing.knative.dev/v1alpha1
+    kind: RabbitmqBrokerConfig
+    name: rabbitmq-broker-config
 
 ---
 

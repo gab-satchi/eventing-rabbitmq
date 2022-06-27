@@ -20,7 +20,7 @@ aggregator_port_forwarding() { # args: entity
 }
 
 wait_for_performance_job() { # args: entity
-  kubectl wait --for=condition=complete job/rabbitmq-$1-perf-send-receive --timeout=10m --namespace perf-eventing
+  kubectl wait --for=condition=complete job/rabbitmq-$1-perf-send-receive --timeout=15m --namespace perf-eventing
   sleep 10 # sometimes the perf work takes some extra time to finish
 }
 
